@@ -111,6 +111,31 @@
     color:var(--ink);font-size:13px;letter-spacing:.03em;opacity:0;transition:opacity .35s ease, transform .35s ease;
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none;z-index:10;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* ---------- 本命占卜浮层 ---------- */
+  .dmask{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,4,10,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    opacity:0;pointer-events:none;transition:opacity .3s ease;padding:20px;}
+  .dmask.show{opacity:1;pointer-events:auto;}
+  .dmask.hidden{display:none;}
+  .dcard{position:relative;width:min(420px,92vw);max-height:88vh;overflow:auto;border-radius:26px;
+    background:var(--glass);border:1px solid var(--line);padding:34px 28px 28px;text-align:center;
+    box-shadow:0 24px 80px rgba(0,0,0,.55);transform:translateY(16px);transition:transform .3s ease;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
+  .dmask.show .dcard{transform:translateY(0);}
+  .dclose{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);
+    font-size:22px;line-height:1;cursor:pointer;padding:4px 8px;}
+  .dclose:hover{color:var(--ink);}
+  .dkicker{margin:0;font-size:12px;color:var(--muted);letter-spacing:.34em;font-weight:300;}
+  .dtitle{margin:16px 0 0;font-size:clamp(40px,10vw,60px);font-weight:700;letter-spacing:.16em;
+    text-shadow:0 2px 26px rgba(0,0,0,.55);}
+  .dhalo{margin:22px auto 0;width:86px;height:86px;border-radius:50%;filter:blur(1px);
+    box-shadow:0 0 46px 12px rgba(255,255,255,.5);}
+  .dtags{display:flex;justify-content:center;gap:10px;margin:22px 0 0;}
+  .dtag{padding:7px 16px;border-radius:999px;border:1px solid var(--line);font-size:13px;
+    letter-spacing:.22em;color:var(--ink);background:rgba(255,255,255,.08);}
+  .dsay{margin:22px auto 0;max-width:300px;font-family:"Songti SC","STSong","SimSun",serif;
+    font-size:17px;line-height:1.9;color:#ffeff6;font-weight:300;text-shadow:0 2px 12px rgba(0,0,0,.6);}
+  .dbtns{display:flex;justify-content:center;gap:10px;margin:26px 0 0;}
   .hidden{display:none !important;}
   @media (max-width:520px){
     .card{flex-direction:column;border-radius:24px;padding:12px 12px;}
@@ -153,6 +178,7 @@
         <button class="ghost" id="saveVideo">动态视频</button>
         <button class="ghost" id="saveHtml">动态网页</button>
         <button class="ghost" id="share">复制分享</button>
+        <button class="ghost" id="divine">本命占卜</button>
         <button class="ghost" id="regen">换一签</button>
       </div>
     </div>
@@ -179,6 +205,20 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="dmask hidden" id="dmask">
+  <div class="dcard">
+    <button class="dclose" id="dclose">✕</button>
+    <p class="dkicker" id="dkicker">本命占卜</p>
+    <h2 class="dtitle" id="dtitle"></h2>
+    <div class="dhalo" id="dhalo"></div>
+    <div class="dtags" id="dtags"></div>
+    <p class="dsay" id="dsay"></p>
+    <div class="dbtns">
+      <button class="ghost" id="dsave">保存角色卡</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -219,12 +259,18 @@
 
   /* ---------- 主题（每套横竖双图） ---------- */
   const THEMES=[
-    {id:"夜樱",img:"assets/theme1.jpg",land:"assets/theme1_land.jpg",petal:[255,183,197],glow:[[255,215,106],[255,150,120],[255,232,170]]},
-    {id:"月下",img:"assets/theme2.jpg",land:"assets/theme2_land.jpg",petal:[232,93,117],glow:[[255,202,92],[255,150,70],[255,232,150]]},
-    {id:"霓虹",img:"assets/theme3.jpg",land:"assets/theme3_land.jpg",petal:[90,220,255],glow:[[0,255,255],[255,60,210],[130,150,255]]},
-    {id:"星穹",img:"assets/theme4.jpg",land:"assets/theme4_land.jpg",petal:[170,210,255],glow:[[200,220,255],[140,180,255],[255,255,255]]},
-    {id:"霜夜",img:"assets/theme5.jpg",land:"assets/theme5_land.jpg",petal:[200,220,255],glow:[[160,210,255],[120,160,255],[230,240,255]]},
-    {id:"森语",img:"assets/theme6.jpg",land:"assets/theme6_land.jpg",petal:[150,220,120],glow:[[255,220,120],[200,255,160],[255,180,100]]}
+    {id:"夜樱",img:"assets/theme1.jpg",land:"assets/theme1_land.jpg",petal:[255,183,197],glow:[[255,215,106],[255,150,120],[255,232,170]],
+      attr:["樱花魂","缱绻"],say:["你是三月风里，先于花开的那个名字。","落樱认得你的衣袖，年年赴约。"]},
+    {id:"月下",img:"assets/theme2.jpg",land:"assets/theme2_land.jpg",petal:[232,93,117],glow:[[255,202,92],[255,150,70],[255,232,150]],
+      attr:["月影","清冷"],say:["月色偏爱你，夜夜只照你一人。","你在人间，亦是一场温柔的满月。"]},
+    {id:"霓虹",img:"assets/theme3.jpg",land:"assets/theme3_land.jpg",petal:[90,220,255],glow:[[0,255,255],[255,60,210],[130,150,255]],
+      attr:["赛博","电波"],say:["万千霓虹之中，只有你是唯一信号。","夜里的城市会落幕，你的光不会。"]},
+    {id:"星穹",img:"assets/theme4.jpg",land:"assets/theme4_land.jpg",petal:[170,210,255],glow:[[200,220,255],[140,180,255],[255,255,255]],
+      attr:["星辉","远航"],say:["星辰倾落，只为照亮你的航线。","你的名字，是一颗未被命名的星。"]},
+    {id:"霜夜",img:"assets/theme5.jpg",land:"assets/theme5_land.jpg",petal:[200,220,255],glow:[[160,210,255],[120,160,255],[230,240,255]],
+      attr:["雪魄","孤傲"],say:["霜雪千山，你自独立如刃。","越是寒夜，越见你眼底的凛光。"]},
+    {id:"森语",img:"assets/theme6.jpg",land:"assets/theme6_land.jpg",petal:[150,220,120],glow:[[255,220,120],[200,255,160],[255,180,100]],
+      attr:["森息","治愈"],say:["萤火绕林，皆为你的呼吸所引。","世界再吵，你的名字里有风声。"]}
   ];
 
   /* ---------- 和风签文 ---------- */
@@ -1042,6 +1088,110 @@
     ta.select();try{document.execCommand("copy");showToast("分享文案已复制");}catch(e){showToast("复制失败，请手动复制");}
     document.body.removeChild(ta);
   }
+
+  /* ---------- 本命占卜 ---------- */
+  let divineResult=null;
+  function openDivine(){
+    const rnd=mulberry32(hashStr(curName||"无名旅人"));
+    const ti=Math.floor(rnd()*THEMES.length);
+    const th=THEMES[ti];
+    const ai1=(rnd()*th.attr.length)|0;
+    const ai2=(ai1+1)%th.attr.length;
+    const a1=th.attr[ai1],a2=th.attr[ai2];
+    const say=th.say[(rnd()*th.say.length)|0];
+    divineResult={th,a1,a2,say};
+    dkicker.textContent="本命占卜 · 赠予「"+curName+"」";
+    dtitle.textContent=th.id;
+    dhalo.style.background="radial-gradient(circle at 50% 50%,rgba("+th.glow[0].join(",")+",0.95),rgba("+th.glow[1].join(",")+",0.45) 60%,transparent 100%)";
+    dtags.innerHTML="";
+    for(const a of [a1,a2]){
+      const s=document.createElement("span");s.className="dtag";s.textContent=a;dtags.appendChild(s);
+    }
+    dsay.textContent=say;
+    dmask.classList.remove("hidden");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>dmask.classList.add("show")));
+  }
+  function closeDivine(){
+    dmask.classList.remove("show");
+    setTimeout(()=>dmask.classList.add("hidden"),320);
+  }
+  function renderDivineCard(){
+    return new Promise(resolve=>{
+      const w=1080,h=1440;
+      const th=divineResult.th,img=new Image();
+      function paint(oc,src){
+        const ir=src.width/src.height,cr=w/h;
+        let dw,dh,dx,dy;
+        if(ir>cr){dh=h;dw=h*ir;dx=(w-dw)/2;dy=0;}else{dw=w;dh=w/ir;dx=0;dy=(h-dh)/2;}
+        oc.drawImage(src,dx,dy,dw,dh);
+        const gy=h*0.36,g=oc.createLinearGradient(0,gy,0,h);
+        g.addColorStop(0,"rgba(0,0,0,0)");
+        g.addColorStop(1,"rgba(0,0,0,0.82)");
+        oc.fillStyle=g;oc.fillRect(0,gy,w,h-gy);
+
+        oc.textAlign="center";
+        oc.shadowColor="rgba(0,0,0,0.7)";oc.shadowBlur=18;
+        oc.fillStyle="rgba(255,255,255,0.9)";
+        oc.font="300 40px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
+        oc.fillText("本命占卜 · 赠予「"+curName+"」",w/2,300);
+
+        oc.fillStyle="#ffffff";
+        oc.font="700 150px \"Songti SC\",\"STSong\",\"SimSun\",serif";
+        oc.fillText(th.id,w/2,470);
+
+        const gx=w/2,gy2=620,r=120;
+        const halo=oc.createRadialGradient(gx,gy2,0,gx,gy2,r);
+        halo.addColorStop(0,"rgba("+th.glow[0].join(",")+",0.95)");
+        halo.addColorStop(0.55,"rgba("+th.glow[1].join(",")+",0.5)");
+        halo.addColorStop(1,"rgba(0,0,0,0)");
+        oc.fillStyle=halo;oc.beginPath();oc.arc(gx,gy2,r,0,Math.PI*2);oc.fill();
+
+        let y=820;
+        for(const a of [divineResult.a1,divineResult.a2]){
+          oc.shadowBlur=8;
+          oc.fillStyle="rgba(255,255,255,0.92)";
+          oc.font="500 54px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
+          oc.fillText(a,w/2,y);y+=90;
+        }
+        oc.shadowBlur=0;
+        oc.fillStyle="rgba(255,255,255,0.9)";
+        oc.font="48px \"Songti SC\",\"STSong\",\"SimSun\",serif";
+        const lines=wrapCn(oc,divineResult.say,w-320);
+        const lh=48*1.5;
+        let ly=1040;
+        for(const ln of lines){oc.fillText(ln,w/2,ly);ly+=lh;}
+
+        oc.font="300 34px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
+        oc.fillStyle="rgba(255,255,255,0.55)";
+        oc.fillText("幻灯庭 · wanghj-it.github.io/ai-agent-demo",w/2,h-70);
+      }
+      img.onload=()=>{
+        const off=document.createElement("canvas");off.width=w;off.height=h;
+        paint(off.getContext("2d"),img);resolve(off);
+      };
+      img.onerror=()=>{
+        const off=document.createElement("canvas");off.width=w;off.height=h;
+        const oc=off.getContext("2d");
+        oc.fillStyle="#0c0a14";oc.fillRect(0,0,w,h);
+        paint(oc,sharpImg);resolve(off);
+      };
+      img.src=th.img;
+    });
+  }
+  document.getElementById("divine").addEventListener("click",openDivine);
+  document.getElementById("dclose").addEventListener("click",closeDivine);
+  dmask.addEventListener("click",e=>{if(e.target===dmask)closeDivine();});
+  document.getElementById("dsave").addEventListener("click",()=>{
+    if(!divineResult){showToast("请先占卜");return;}
+    showToast("正在生成角色卡…");
+    renderDivineCard().then(off=>{
+      off.toBlob(b=>{
+        if(!b)return;
+        downloadBlob(b,"幻灯庭-本命占卜-"+curName+".png");
+        showToast("角色卡已保存");
+      },"image/png");
+    }).catch(()=>showToast("生成失败，请重试"));
+  });
 
   /* ---------- 启动 ---------- */
   buildGlowSprites();
