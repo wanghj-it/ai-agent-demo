@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wanghj-it.github.io/ai-agent-demo/sitemap.xml
