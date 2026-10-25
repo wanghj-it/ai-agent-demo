@@ -28,7 +28,7 @@
     linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 26%,rgba(0,0,0,0) 62%,rgba(0,0,0,.5) 100%);}
   #fx{position:fixed;inset:0;display:block;pointer-events:none;}
   .ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
-    justify-content:space-between;padding:max(30px,env(safe-area-inset-top)) 20px 150px;
+    justify-content:space-between;padding:max(30px,env(safe-area-inset-top)) 20px 200px;
     pointer-events:none;}
   header{text-align:center;padding-top:2vh;}
   h1{margin:0;font-size:clamp(26px,5.5vw,44px);font-weight:700;letter-spacing:.22em;
@@ -70,21 +70,23 @@
     -webkit-backdrop-filter:blur(10px);transition:background .2s ease, border-color .2s ease;}
   .ghost:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.34);}
   .ghost.on{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.55);}
-  .themes{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);
-    display:flex;gap:12px;padding:9px 12px;border-radius:999px;
+  .dock{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:max(16px,env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    z-index:6;pointer-events:none;max-width:96vw;}
+  .themes{display:flex;gap:12px;padding:9px 12px;border-radius:999px;
     background:var(--glass);border:1px solid var(--line);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    pointer-events:auto;z-index:5;}
+    pointer-events:auto;}
   .thumb{width:46px;height:46px;border-radius:50%;border:2px solid transparent;
     background-size:cover;background-position:center top;cursor:pointer;padding:0;
     opacity:.72;transition:opacity .2s ease,transform .2s ease,border-color .2s ease;}
   .thumb:hover{opacity:1;transform:translateY(-2px);}
   .thumb.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25),0 4px 18px rgba(0,0,0,.4);}
-  .controls{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);
-    display:flex;align-items:center;gap:14px;padding:9px 18px;
+  .controls{display:flex;align-items:center;gap:14px;padding:9px 18px;
     background:var(--glass);border:1px solid var(--line);border-radius:999px;
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    pointer-events:auto;z-index:5;}
+    pointer-events:auto;}
   .controls .ctl-label{font-size:12px;color:var(--muted);letter-spacing:.06em;white-space:nowrap;}
   .controls input[type=range]{width:110px;accent-color:#e6c9ff;cursor:pointer;}
   .controls .count{font-size:11px;color:var(--faint);min-width:38px;text-align:left;
@@ -92,7 +94,7 @@
   .controls .ghost{padding:8px 15px;font-size:13px;}
   footer{text-align:center;font-size:12px;color:var(--faint);letter-spacing:.06em;font-weight:300;
     text-shadow:0 2px 8px rgba(0,0,0,.5);}
-  .toast{position:fixed;left:50%;bottom:175px;transform:translateX(-50%) translateY(12px);
+  .toast{position:fixed;left:50%;bottom:232px;transform:translateX(-50%) translateY(12px);
     padding:11px 22px;border-radius:999px;background:rgba(20,18,34,.86);border:1px solid var(--line);
     color:var(--ink);font-size:13px;letter-spacing:.03em;opacity:0;transition:opacity .35s ease, transform .35s ease;
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none;z-index:10;}
@@ -102,10 +104,11 @@
     .card{flex-direction:column;border-radius:24px;padding:12px 12px;}
     .card input{width:100%;text-align:center;padding:6px 0;font-size:15px;}
     .primary{width:100%;}
-    .themes{gap:8px;bottom:112px;max-width:94vw;}
+    .themes{gap:8px;max-width:94vw;}
     .thumb{width:38px;height:38px;}
     .controls{max-width:94vw;flex-wrap:wrap;justify-content:center;gap:9px;}
     .controls input[type=range]{width:84px;}
+    .toast{bottom:250px;}
   }
 </style>
 </head>
@@ -135,6 +138,8 @@
       <p class="verse" id="verse"></p>
       <div class="actions">
         <button class="ghost" id="save">保存壁纸</button>
+        <button class="ghost" id="saveVideo">动态视频</button>
+        <button class="ghost" id="saveHtml">动态网页</button>
         <button class="ghost" id="share">复制分享</button>
         <button class="ghost" id="regen">换一签</button>
       </div>
@@ -149,14 +154,16 @@
   <div class="date" id="dateEl"></div>
 </div>
 
-<div class="themes" id="themes"></div>
+<div class="dock">
+  <div class="themes" id="themes"></div>
 
-<div class="controls">
-  <span class="ctl-label">星点</span>
-  <input type="range" id="density" min="100" max="3000" step="50">
-  <span class="count" id="densityCount"></span>
-  <button class="ghost" id="viewBtn">视角 · 自动</button>
-  <button class="ghost" id="clockBtn">时钟</button>
+  <div class="controls">
+    <span class="ctl-label">星点</span>
+    <input type="range" id="density" min="100" max="3000" step="50">
+    <span class="count" id="densityCount"></span>
+    <button class="ghost" id="viewBtn">视角 · 自动</button>
+    <button class="ghost" id="clockBtn">时钟</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -603,7 +610,8 @@
     if(cur)lines.push(cur);
     return lines;
   }
-  function drawOverlay(oc,w,h){
+  function drawOverlay(oc,w,h,sc){
+    const s=sc||1;
     const isLand=h<w;
     oc.textAlign="center";
     const gy=h*0.56;
@@ -613,31 +621,31 @@
     oc.fillStyle=g;oc.fillRect(0,gy,w,h-gy);
 
     const name=gnameEl.textContent,coord=coordEl.textContent,verse=verseEl.textContent;
-    const namePx=isLand?104:116,coordPx=isLand?38:42,versePx=isLand?62:74;
-    const maxW=w-(isLand?280:240);
+    const namePx=(isLand?104:116)*s,coordPx=(isLand?38:42)*s,versePx=(isLand?62:74)*s;
+    const maxW=w-(isLand?280:240)*s;
 
-    oc.shadowColor="rgba(0,0,0,0.65)";oc.shadowBlur=16;
+    oc.shadowColor="rgba(0,0,0,0.65)";oc.shadowBlur=16*s;
     oc.fillStyle="#ffffff";
     oc.font="600 "+namePx+"px \"Songti SC\",\"STSong\",\"SimSun\",serif";
-    oc.fillText(name,w/2,h-(isLand?152:520));
+    oc.fillText(name,w/2,h-(isLand?152:520)*s);
 
     oc.font=coordPx+"px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
     oc.fillStyle="rgba(255,255,255,0.85)";
-    oc.fillText(coord,w/2,h-(isLand?112:434));
+    oc.fillText(coord,w/2,h-(isLand?112:434)*s);
 
     oc.fillStyle="#ffffff";
     oc.font=versePx+"px \"Songti SC\",\"STSong\",\"SimSun\",serif";
     const lines=wrapCn(oc,verse,maxW);
     const lh=versePx*1.18;
-    let ly=h-(isLand?64:308);
+    let ly=h-(isLand?64:308)*s;
     for(const ln of lines){oc.fillText(ln,w/2,ly);ly-=lh;}
 
     oc.shadowBlur=0;
     oc.textAlign="right";
-    oc.font="300 30px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
+    oc.font="300 "+30*s+"px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
     oc.fillStyle="rgba(255,255,255,0.5)";
     const d=new Date();
-    oc.fillText("幻灯庭 · "+(d.getMonth()+1)+"/"+d.getDate(),w-46,h-42);
+    oc.fillText("幻灯庭 · "+(d.getMonth()+1)+"/"+d.getDate(),w-46*s,h-42*s);
   }
 
   document.getElementById("save").addEventListener("click",async()=>{
@@ -655,6 +663,284 @@
       },"image/png");
     }catch(err){showToast("保存失败，请稍后重试");}
   });
+
+  /* ---------- 动态导出：公用 ---------- */
+  const LOOP_SEC=8;
+  let busyExport=false;
+  function downloadBlob(blob,name){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  }
+  function loadImage(src){
+    return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+  }
+  function pickMime(){
+    if(!window.MediaRecorder)return "";
+    const list=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm","video/mp4;codecs=avc1.42E01E","video/mp4"];
+    for(const m of list){if(MediaRecorder.isTypeSupported(m))return m;}
+    return "";
+  }
+
+  /* ---------- 动态导出：无缝循环视频 ---------- */
+  document.getElementById("saveVideo").addEventListener("click",async()=>{
+    if(busyExport){showToast("正在导出，请稍候…");return;}
+    const mime=pickMime();
+    if(!mime){showToast("当前浏览器不支持视频导出，可试试「动态网页」");return;}
+    busyExport=true;
+    showToast("正在录制 8 秒动态壁纸，请保持本页在前台…");
+    try{
+      const orient=currentOrient();
+      const w=orient==="land"?1920:1080,h=orient==="land"?1080:1920;
+      const sc=(orient==="land"?w:h)/2560;
+      const th=THEMES[themeIdx];
+      const img=await loadImage(orient==="land"?th.land:th.img);
+      const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+      const oc=cv.getContext("2d");
+      const rnd=mulberry32(curSeed^0x9e3779b9);
+      const TAU=Math.PI*2;
+      const N=Math.round(Math.min(900,Math.max(320,MO*0.5)));
+      const motes=[];
+      for(let i=0;i<N;i++){
+        motes.push({
+          bx:rnd()*w,by:rnd()*h,
+          ax:30+rnd()*90,ay:26+rnd()*80,
+          f1:1+((rnd()*3)|0),f2:1+((rnd()*2)|0),
+          p1:rnd()*TAU,p2:rnd()*TAU,
+          tw:1+((rnd()*4)|0),tp:rnd()*TAU,
+          size:6+rnd()*22,ci:(rnd()*th.glow.length)|0
+        });
+      }
+      const PN=Math.round(N*0.14)+8,petals=[];
+      for(let i=0;i<PN;i++){
+        petals.push({
+          bx:rnd()*w,by:rnd()*h,ax:40+rnd()*110,ay:50+rnd()*140,
+          f1:1+((rnd()*2)|0),f2:1+((rnd()*3)|0),p1:rnd()*TAU,p2:rnd()*TAU,
+          rot:rnd()*TAU,rf:1+((rnd()*2)|0),size:8+rnd()*12,al:0.45+rnd()*0.45
+        });
+      }
+      function draw(t){
+        oc.globalCompositeOperation="source-over";oc.globalAlpha=1;
+        oc.drawImage(img,0,0,w,h);
+        for(let i=0;i<petals.length;i++){
+          const p=petals[i];
+          const x=p.bx+Math.sin(t*TAU*p.f1/LOOP_SEC+p.p1)*p.ax;
+          const y=p.by+Math.sin(t*TAU*p.f2/LOOP_SEC+p.p2)*p.ay;
+          const ang=p.rot+t*TAU*p.rf/LOOP_SEC;
+          oc.globalAlpha=p.al;
+          oc.save();oc.translate(x,y);oc.rotate(ang);
+          oc.drawImage(petalSprite,-p.size,-p.size,p.size*2,p.size*2);
+          oc.restore();
+        }
+        oc.globalAlpha=1;
+        oc.globalCompositeOperation="lighter";
+        for(let i=0;i<motes.length;i++){
+          const p=motes[i];
+          const x=p.bx+Math.sin(t*TAU*p.f1/LOOP_SEC+p.p1)*p.ax;
+          const y=p.by+Math.sin(t*TAU*p.f2/LOOP_SEC+p.p2)*p.ay;
+          const a=0.18+0.5*(0.5+0.5*Math.sin(t*TAU*p.tw/LOOP_SEC+p.tp));
+          oc.globalAlpha=a;
+          oc.drawImage(glowSprites[p.ci],x-p.size,y-p.size,p.size*2,p.size*2);
+        }
+        oc.globalAlpha=1;oc.globalCompositeOperation="source-over";
+        drawOverlay(oc,w,h,sc);
+      }
+      draw(0);
+      const stream=cv.captureStream(30);
+      const mr=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+      const chunks=[];
+      mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+      mr.onstop=()=>{
+        busyExport=false;
+        const blob=new Blob(chunks,{type:mime.split(";")[0]});
+        if(blob.size<2000){showToast("录制失败，请重试");return;}
+        const ext=mime.indexOf("mp4")>=0?"mp4":"webm";
+        downloadBlob(blob,"幻灯庭-"+curName+"-"+VIEW_LABEL[orient]+"-动态."+ext);
+        showToast("动态壁纸已保存（"+Math.round(blob.size/1048576)+"MB）");
+      };
+      mr.start();
+      const start=performance.now();
+      (function step(){
+        const el=(performance.now()-start)/1000;
+        draw(el%LOOP_SEC);
+        if(el<LOOP_SEC)requestAnimationFrame(step);
+        else setTimeout(()=>mr.stop(),150);
+      })();
+    }catch(err){busyExport=false;showToast("动态视频导出失败，请重试");}
+  });
+
+  /* ---------- 动态导出：单文件动态网页 ---------- */
+  async function imgDataUrl(url){
+    try{
+      const r=await fetch(url,{cache:"force-cache"});
+      if(!r.ok)throw new Error("fetch");
+      const b=await r.blob();
+      return await new Promise(res=>{
+        const fr=new FileReader();
+        fr.onload=()=>res(fr.result);
+        fr.onerror=()=>res(new URL(url,location.href).href);
+        fr.readAsDataURL(b);
+      });
+    }catch(e){return new URL(url,location.href).href;}
+  }
+  function escHtml(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  document.getElementById("saveHtml").addEventListener("click",async()=>{
+    if(busyExport){showToast("正在导出，请稍候…");return;}
+    busyExport=true;
+    showToast("正在打包动态壁纸网页…");
+    try{
+      const orient=currentOrient();
+      const th=THEMES[themeIdx];
+      const src=await imgDataUrl(orient==="land"?th.land:th.img);
+      const d=new Date();
+      const dateStr=(d.getMonth()+1)+"月"+d.getDate()+"日";
+      const html=buildLivePage({
+        src:src,glow:th.glow,petal:th.petal,seed:curSeed,
+        name:gnameEl.textContent,coord:coordEl.textContent,verse:verseEl.textContent,date:dateStr
+      });
+      downloadBlob(new Blob([html],{type:"text/html;charset=utf-8"}),
+        "幻灯庭-"+curName+"-"+VIEW_LABEL[orient]+"-动态.html");
+      busyExport=false;
+      showToast("动态网页已保存，浏览器打开即循环播放");
+    }catch(err){busyExport=false;showToast("动态网页导出失败，请重试");}
+  });
+
+  function buildLivePage(o){
+    const name=escHtml(o.name),coord=escHtml(o.coord),verse=escHtml(o.verse);
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>幻灯庭 · 动态壁纸</title>
+<style>
+  html,body{margin:0;height:100%;background:#06060d;overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;}
+  #bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;
+    user-select:none;-webkit-user-drag:none;}
+  #fx{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .shade{position:fixed;inset:0;pointer-events:none;background:
+    linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 28%,rgba(0,0,0,0) 54%,rgba(0,0,0,.76) 100%);}
+  .txt{position:fixed;left:0;right:0;bottom:max(8vh,40px);text-align:center;
+    padding:0 6vw;pointer-events:none;}
+  .txt h1{margin:0;font-family:"Songti SC","STSong","SimSun",serif;font-weight:600;
+    font-size:clamp(26px,7vw,60px);line-height:1.25;letter-spacing:.08em;color:#fff;
+    text-shadow:0 2px 22px rgba(0,0,0,.7);}
+  .txt .coord{margin:14px 0 0;font-size:clamp(12px,2.4vw,19px);letter-spacing:.14em;
+    color:rgba(255,255,255,.86);text-shadow:0 2px 12px rgba(0,0,0,.7);}
+  .txt .verse{margin:16px auto 0;max-width:26em;font-family:"Songti SC","STSong","SimSun",serif;
+    font-weight:300;font-size:clamp(14px,2.8vw,22px);line-height:1.9;color:#fff;
+    text-shadow:0 2px 14px rgba(0,0,0,.75);}
+  .mark{position:fixed;right:14px;bottom:10px;font-size:11px;letter-spacing:.1em;
+    color:rgba(255,255,255,.42);pointer-events:none;}
+</style>
+</head>
+<body>
+<img id="bg" src="${o.src}" alt="">
+<div class="shade"></div>
+<canvas id="fx"></canvas>
+<div class="txt">
+  <h1>${name}</h1>
+  <p class="coord">${coord}</p>
+  <p class="verse">${verse}</p>
+</div>
+<div class="mark">幻灯庭 · ${escHtml(o.date)}</div>
+<script>
+(function(){
+  var C=${JSON.stringify(o.glow)},PC=${JSON.stringify(o.petal)},SEED=${o.seed|0};
+  var cv=document.getElementById('fx'),ctx=cv.getContext('2d');
+  var W=0,H=0,K=1,motes=[],petals=[],bursts=[],t0=performance.now();
+  function rndf(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  function makeGlow(c){
+    var s=document.createElement('canvas');s.width=s.height=64;
+    var g=s.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(255,255,255,1)');
+    gr.addColorStop(0.2,'rgba('+c[0]+','+c[1]+','+c[2]+',0.9)');
+    gr.addColorStop(0.6,'rgba('+c[0]+','+c[1]+','+c[2]+',0.28)');
+    gr.addColorStop(1,'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+    g.fillStyle=gr;g.fillRect(0,0,64,64);return s;
+  }
+  function makePetal(col){
+    var size=64,c=document.createElement('canvas');c.width=c.height=size;
+    var g=c.getContext('2d'),s=size/2,k=s*0.42;
+    g.translate(s,s);g.beginPath();g.moveTo(0,-s*0.82);
+    g.bezierCurveTo(k*0.9,-k*0.7,k*0.9,-k*0.1,0,s*0.82);
+    g.bezierCurveTo(-k*0.9,-k*0.1,-k*0.9,-k*0.7,0,-s*0.82);
+    g.closePath();
+    var gr=g.createLinearGradient(0,-s*0.82,0,s*0.82);
+    gr.addColorStop(0,'rgba('+col+',0.95)');
+    gr.addColorStop(0.5,'rgba('+col+',0.85)');
+    gr.addColorStop(1,'rgba('+col+',0.5)');
+    g.fillStyle=gr;g.fill();return c;
+  }
+  var glow=C.map(makeGlow),petalS=makePetal(PC);
+  function init(){
+    var rnd=rndf(SEED);
+    K=Math.max(0.75,Math.min(2.2,Math.min(W,H)/720));
+    var n=Math.round(Math.min(900,Math.max(240,W*H/2400)));
+    motes=[];petals=[];
+    for(var i=0;i<n;i++)motes.push({x:rnd()*W,y:rnd()*H,ph:rnd()*6.283,ph2:rnd()*6.283,
+      sz:(2+rnd()*7)*K,ci:(rnd()*glow.length)|0,al:0.3+rnd()*0.7,tw:0.4+rnd()*1.2});
+    var pn=Math.round(n*0.14)+6;
+    for(var j=0;j<pn;j++)petals.push({x:rnd()*W,y:rnd()*H,vy:(0.35+rnd()*0.8)*Math.max(0.8,K),
+      sz:(5+rnd()*9)*K,rot:rnd()*6.283,vr:(rnd()-0.5)*0.02,ph:rnd()*6.283,al:0.4+rnd()*0.5});
+  }
+  function resize(){
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+    W=window.innerWidth;H=window.innerHeight;
+    cv.width=Math.floor(W*dpr);cv.height=Math.floor(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);init();
+  }
+  function frame(now){
+    requestAnimationFrame(frame);
+    var t=(now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    ctx.globalCompositeOperation='source-over';
+    for(var i=0;i<petals.length;i++){
+      var p=petals[i];
+      p.x+=Math.sin(t*0.8+p.ph)*0.34+0.06;p.y+=p.vy;p.rot+=p.vr;
+      if(p.y>H+40){p.y=-40;p.x=Math.random()*W;}
+      if(p.x>W+50)p.x=-50;
+      ctx.globalAlpha=p.al;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.drawImage(petalS,-p.sz,-p.sz,p.sz*2,p.sz*2);ctx.restore();
+    }
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='lighter';
+    for(var m=0;m<motes.length;m++){
+      var q=motes[m];
+      q.x+=Math.sin(t*0.5+q.ph)*0.3+0.04;q.y+=Math.cos(t*0.4+q.ph2)*0.25-0.05;
+      if(q.x<-50)q.x=W+50;if(q.x>W+50)q.x=-50;
+      if(q.y<-50)q.y=H+50;if(q.y>H+50)q.y=-50;
+      ctx.globalAlpha=q.al*(0.55+0.45*Math.sin(t*q.tw+q.ph));
+      ctx.drawImage(glow[q.ci],q.x-q.sz,q.y-q.sz,q.sz*2,q.sz*2);
+    }
+    ctx.globalAlpha=1;
+    for(var b=bursts.length-1;b>=0;b--){
+      var bb=bursts[b],k=bb.age/40;
+      if(k>=1){bursts.splice(b,1);continue;}
+      bb.age++;
+      var r=Math.max(W,H)*0.16*k;
+      var ring=ctx.createRadialGradient(bb.x,bb.y,0,bb.x,bb.y,r);
+      var c0=C[0];
+      ring.addColorStop(0,'rgba(255,255,255,'+(0.55*(1-k))+')');
+      ring.addColorStop(0.25,'rgba('+c0[0]+','+c0[1]+','+c0[2]+','+(0.3*(1-k))+')');
+      ring.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=ring;ctx.fillRect(bb.x-r,bb.y-r,r*2,r*2);
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+  window.addEventListener('pointerdown',function(e){bursts.push({x:e.clientX,y:e.clientY,age:0});});
+  window.addEventListener('resize',resize);
+  resize();requestAnimationFrame(frame);
+})();
+<\/script>
+</body>
+</html>`;
+  }
 
   /* ---------- 复制分享 ---------- */
   function getShareUrl(){
