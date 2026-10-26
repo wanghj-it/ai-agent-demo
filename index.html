@@ -202,6 +202,7 @@
         <button class="ghost" id="saveVideo">动态视频</button>
         <button class="ghost" id="saveHtml">动态网页</button>
         <button class="ghost" id="wallBtn">桌面动态壁纸</button>
+        <button class="ghost" id="mwallBtn">手机动态壁纸</button>
         <button class="ghost" id="share">复制分享</button>
         <button class="ghost" id="divine">本命占卜</button>
         <button class="ghost" id="regen">换一签</button>
@@ -258,6 +259,20 @@
       <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;">③ 在桌面上点该壁纸，选择要填充的显示器即为动态壁纸</div>
     </div>
     <p class="dsay" style="margin-top:18px;font-size:13px;color:var(--muted);">网页壁纸同样可被 Wallpaper Engine 以“网页 / 本地 HTML”方式加载。</p>
+  </div>
+</div>
+
+<div class="dmask hidden" id="mwallmask">
+  <div class="dcard">
+    <button class="dclose" id="mwclose">✕</button>
+    <h2 class="dtitle" id="mwtitle">设为手机动态壁纸</h2>
+    <p class="dsay" id="mwsay">先用上方「动态视频」导出<b> MP4</b>，再按系统设为动态壁纸：</p>
+    <div class="dtags" style="flex-direction:column;align-items:stretch;gap:12px;margin-top:20px;">
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;"><b>· Android：</b>设置 → 壁纸与样式 → 选择视频 → 选刚导出的 MP4，设为动态壁纸</div>
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;"><b>· iPhone：</b>iOS 无原生视频壁纸，需先把 MP4 用第三方工具（如 intoLive）转成<b>实况照片</b>，再在 设置→墙纸 里设为「实况」壁纸</div>
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;">若想在线预览：先在手机浏览器打开本站，生成后点「动态视频」下载到相册再设置。</div>
+    </div>
+    <p class="dsay" style="margin-top:18px;font-size:13px;color:var(--muted);">提示：Android 大多支持视频动态壁纸；iPhone 无原生视频壁纸，需 Live Photo 方案。</p>
   </div>
 </div>
 
@@ -1013,6 +1028,15 @@
     setTimeout(()=>wmask.classList.add("hidden"),320);
   });
   wmask.addEventListener("click",e=>{if(e.target===wmask){wmask.classList.remove("show");setTimeout(()=>wmask.classList.add("hidden"),320);}});
+  document.getElementById("mwallBtn").addEventListener("click",()=>{
+    mwallmask.classList.remove("hidden");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>mwallmask.classList.add("show")));
+  });
+  document.getElementById("mwclose").addEventListener("click",()=>{
+    mwallmask.classList.remove("show");
+    setTimeout(()=>mwallmask.classList.add("hidden"),320);
+  });
+  mwallmask.addEventListener("click",e=>{if(e.target===mwallmask){mwallmask.classList.remove("show");setTimeout(()=>mwallmask.classList.add("hidden"),320);}});
 
   function buildLivePage(o){
     const name=escHtml(o.name),coord=escHtml(o.coord),verse=escHtml(o.verse);
