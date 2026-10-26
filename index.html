@@ -76,12 +76,20 @@
   .verse{margin:20px auto 0;max-width:430px;font-size:clamp(16px,2.8vw,19px);line-height:2;
     color:#ffeff6;font-family:"Songti SC","STSong","SimSun",serif;font-weight:300;
     text-shadow:0 2px 12px rgba(0,0,0,.65);}
+  .avatar-wrap{width:132px;height:132px;margin:0 auto 2px;border-radius:50%;overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.22),0 0 34px rgba(230,201,255,.25);}
+  .avatar-wrap canvas{width:100%;height:100%;display:block;}
   .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px;}
   .ghost{border:1px solid var(--line);border-radius:999px;padding:11px 22px;font-size:14px;
     color:var(--ink);background:var(--glass);backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);transition:background .2s ease, border-color .2s ease;}
   .ghost:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.34);}
   .ghost.on{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.55);}
+  .actions.extra{margin-top:6px;}
+  @media (max-width:480px){
+    .ghost{padding:9px 15px;font-size:13px;}
+    .actions{gap:7px;margin-top:18px;}
+  }
   .dock{position:fixed;left:50%;transform:translateX(-50%);
     bottom:max(16px,env(safe-area-inset-bottom));
     display:flex;flex-direction:column;align-items:center;gap:10px;
@@ -194,18 +202,23 @@
     </div>
 
     <div class="result hidden" id="result">
+      <div class="avatar-wrap"><canvas id="avatar" width="640" height="640" aria-label="专属头像"></canvas></div>
       <h2 class="gname" id="gname"></h2>
       <p class="coord" id="coord"></p>
       <p class="verse" id="verse"></p>
       <div class="actions">
         <button class="ghost" id="save">保存壁纸</button>
+        <button class="ghost" id="saveAvatar">头像下载</button>
+        <button class="ghost" id="moreBtn">更多动态 ▾</button>
+        <button class="ghost" id="share">复制分享</button>
+        <button class="ghost" id="divine">本命占卜</button>
+        <button class="ghost" id="regen">换一签</button>
+      </div>
+      <div class="actions extra hidden" id="extraActions">
         <button class="ghost" id="saveVideo">动态视频</button>
         <button class="ghost" id="saveHtml">动态网页</button>
         <button class="ghost" id="wallBtn">桌面动态壁纸</button>
         <button class="ghost" id="mwallBtn">手机动态壁纸</button>
-        <button class="ghost" id="share">复制分享</button>
-        <button class="ghost" id="divine">本命占卜</button>
-        <button class="ghost" id="regen">换一签</button>
       </div>
     </div>
   </div>
@@ -696,6 +709,7 @@
     typeVerse(pick(VERSES,seed,3));
     card.classList.add("hidden");
     result.classList.remove("hidden");
+    drawAvatar(curName);
   }
   function typeVerse(s){
     verseEl.textContent="";
@@ -719,6 +733,115 @@
   });
   nameInput.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("gen").click();});
   document.getElementById("regen").addEventListener("click",()=>{salt++;generate(hashStr(curName+"#"+salt));});
+
+  /* ---------- 名字专属头像（自绘卡通动漫脸，种子确定性） ---------- */
+  const AV_SKINS=["#ffe3cd","#ffd8ba","#ffc9a2","#ffbf97"];
+  const AV_HAIRS=[["#2b2b33","#4a4a56"],["#5b3a1e","#8a5f34"],["#e6c069","#f4d98c"],["#f2a7c0","#f7c3d4"],["#7fb2e8","#a9d0f2"],["#7fd8c8","#a6e6da"],["#b895e8","#d0b8f2"],["#e86b6b","#f2a4a4"],["#c9d4e8","#e6ecf6"]];
+  const AV_EYES=["#5b8fc4","#f2a7c0","#7fc7bc","#b895e8","#d9a441","#6aa84f","#e86b6b","#3d6fb4"];
+  function _hex(h){h=(h||"").replace("#","");return [parseInt(h.slice(0,2),16)||0,parseInt(h.slice(2,4),16)||0,parseInt(h.slice(4,6),16)||0];}
+  function _blend(h,tgt,t){const a=_hex(h);return "rgb("+a.map((v,i)=>Math.round(v+(tgt-v)*t)).join(",")+")";}
+  function _avStar(c,x,y,r){
+    c.beginPath();
+    for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2,rr=i%2===0?r:r*0.45,px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr;i?c.lineTo(px,py):c.moveTo(px,py);}
+    c.closePath();c.fill();c.stroke();
+  }
+  function _avEye(c,cx,cy,hue,out){
+    c.fillStyle="#fff";c.beginPath();c.ellipse(cx,cy,5,6.4,0,0,Math.PI*2);c.fill();
+    c.strokeStyle=_blend(out,0,0.12);c.lineWidth=1.6;
+    c.beginPath();c.moveTo(cx-5,cy-3);c.quadraticCurveTo(cx,cy-6.6,cx+5,cy-3);c.stroke();
+    const g=c.createRadialGradient(cx,cy-1,0.4,cx,cy,5);
+    g.addColorStop(0,_blend(hue,255,0.5));g.addColorStop(0.55,hue);g.addColorStop(1,_blend(hue,0,0.35));
+    c.fillStyle=g;c.beginPath();c.ellipse(cx,cy+0.5,4.2,5,0,0,Math.PI*2);c.fill();
+    c.fillStyle=_blend(hue,0,0.5);c.beginPath();c.ellipse(cx,cy+0.6,2,2.6,0,0,Math.PI*2);c.fill();
+    c.fillStyle="rgba(255,255,255,.95)";c.beginPath();c.arc(cx-1.6,cy-1.4,1.3,0,Math.PI*2);c.fill();
+    c.fillStyle="rgba(255,255,255,.7)";c.beginPath();c.arc(cx+1.4,cy+1.2,0.7,0,Math.PI*2);c.fill();
+  }
+  function drawAvatar(name){
+    const cv=document.getElementById("avatar"); if(!cv)return;
+    cv.width=640;cv.height=640;
+    const c=cv.getContext("2d");
+    const rnd=mulberry32(hashStr((name||"旅人")+"@avatar"));
+    const skin=AV_SKINS[Math.floor(rnd()*AV_SKINS.length)];
+    const hair=AV_HAIRS[Math.floor(rnd()*AV_HAIRS.length)];
+    const eye=AV_EYES[Math.floor(rnd()*AV_EYES.length)];
+    const style=Math.floor(rnd()*4);   // 0波波头 1双马尾 2长直发 3短刺发
+    const blush=rnd()>0.1;
+    const catMouth=rnd()>0.55;
+    const acc=Math.floor(rnd()*3);     // 0无 1星星发夹 2呆毛
+    c.save();c.scale(6.4,6.4);c.lineJoin="round";c.lineCap="round";
+    const bg=c.createLinearGradient(6,6,94,94);
+    bg.addColorStop(0,_blend(hair[0],255,0.3));bg.addColorStop(1,_blend(hair[0],20,0.55));
+    c.fillStyle=bg;c.beginPath();c.arc(50,50,49,0,Math.PI*2);c.fill();
+    c.strokeStyle="rgba(255,255,255,.3)";c.lineWidth=.7;c.beginPath();c.arc(50,50,46.5,0,Math.PI*2);c.stroke();
+    c.beginPath();c.arc(50,50,48.6,0,Math.PI*2);c.clip();
+    // 肩/衣
+    c.fillStyle=_blend(hair[0],235,0.82);c.beginPath();c.ellipse(50,86,30,20,0,0,Math.PI*2);c.fill();
+    // 脖子
+    c.fillStyle=skin;c.beginPath();c.ellipse(50,71,6,8,0,0,Math.PI*2);c.fill();
+    // 后发
+    if(style===1){
+      c.fillStyle=hair[0];
+      c.beginPath();c.ellipse(23,47,10,22,-0.4,0,Math.PI*2);c.fill();
+      c.beginPath();c.ellipse(77,47,10,22,0.4,0,Math.PI*2);c.fill();
+    }else if(style===2){
+      c.fillStyle=hair[0];c.beginPath();c.ellipse(50,64,32,40,0,0,Math.PI*2);c.fill();
+    }
+    // 脸
+    c.fillStyle=skin;c.beginPath();c.ellipse(50,46,22,23,0,0,Math.PI*2);c.fill();
+    // 眼睛
+    _avEye(c,41,46,eye,hair[0]);_avEye(c,59,46,eye,hair[0]);
+    // 眉
+    c.strokeStyle=_blend(hair[0],0,0.25);c.lineWidth=1.6;
+    c.beginPath();c.moveTo(35,39);c.quadraticCurveTo(38,37,41,38.5);c.stroke();
+    c.beginPath();c.moveTo(59,38.5);c.quadraticCurveTo(62,37,65,39);c.stroke();
+    // 腮红
+    if(blush){
+      c.fillStyle="rgba(255,140,150,.5)";
+      c.beginPath();c.ellipse(34,52,4,2,0,0,Math.PI*2);c.fill();
+      c.beginPath();c.ellipse(66,52,4,2,0,0,Math.PI*2);c.fill();
+    }
+    // 嘴
+    c.strokeStyle="#b5625f";c.lineWidth=1.4;
+    if(catMouth){c.beginPath();c.arc(50,53,1.2,0,Math.PI*2);c.stroke();}
+    else{c.beginPath();c.arc(50,51,3,0.15,Math.PI-0.15);c.stroke();}
+    // 前发（刘海）
+    c.fillStyle=hair[1];
+    c.beginPath();
+    c.moveTo(28,46);
+    c.quadraticCurveTo(28,24,50,24);c.quadraticCurveTo(72,24,72,46);
+    c.lineTo(66,32);c.lineTo(61,44);c.lineTo(55,31);c.lineTo(50,45);c.lineTo(45,31);c.lineTo(39,44);c.lineTo(34,32);
+    c.closePath();c.fill();
+    // 发顶主色
+    c.fillStyle=hair[0];
+    c.beginPath();
+    c.moveTo(28,46);c.quadraticCurveTo(28,24,50,24);c.quadraticCurveTo(72,24,72,46);
+    c.quadraticCurveTo(72,32,50,30);c.quadraticCurveTo(28,32,28,46);c.closePath();c.fill();
+    // 配饰
+    if(acc===1){
+      c.fillStyle="#ffd84d";c.strokeStyle="#e8a33d";c.lineWidth=.8;_avStar(c,69,33,4.5);
+    }else if(acc===2){
+      c.strokeStyle=hair[0];c.lineWidth=1.6;
+      c.beginPath();c.moveTo(50,24);c.quadraticCurveTo(55,16,58,18);c.stroke();
+    }
+    c.restore();
+  }
+  /* 把专属头像（圆形）绘制到任意画布上下文 */
+  function putAvatar(oc,cx,cy,size){
+    const av=document.getElementById("avatar"); if(!av)return;
+    oc.save();
+    oc.beginPath();oc.arc(cx,cy,size/2,0,Math.PI*2);oc.clip();
+    oc.drawImage(av,cx-size/2,cy-size/2,size,size);
+    oc.restore();
+  }
+  document.getElementById("saveAvatar").addEventListener("click",()=>{
+    const cv=document.getElementById("avatar"); if(!cv)return;
+    cv.toBlob(b=>{ if(b)downloadBlob(b,(curName||"旅人")+"-专属头像.png"); },"image/png");
+  });
+  const _moreBtn=document.getElementById("moreBtn"),_extraActions=document.getElementById("extraActions");
+  _moreBtn.addEventListener("click",()=>{
+    const collapsed=_extraActions.classList.toggle("hidden");
+    _moreBtn.textContent=collapsed?"更多动态 ▾":"收起 ▴";
+  });
 
   const toast=document.getElementById("toast");
   let toastTimer=0;
@@ -823,6 +946,8 @@
     const name=gnameEl.textContent,coord=coordEl.textContent,verse=verseEl.textContent;
     const namePx=(isLand?104:116)*s,coordPx=(isLand?38:42)*s,versePx=(isLand?62:74)*s;
     const maxW=w-(isLand?280:240)*s;
+    const avSize=(isLand?120:180)*s;
+    putAvatar(oc,w/2, h-(isLand?152:520)*s - namePx - avSize/2 - (isLand?26:44)*s, avSize);
 
     oc.shadowColor="rgba(0,0,0,0.65)";oc.shadowBlur=16*s;
     oc.fillStyle="#ffffff";
@@ -1179,37 +1304,49 @@
     if(u.startsWith("file:"))return "";
     return u.replace(/(\?|#).*$/,"");
   }
+  function shareLink(){
+    const base=getShareUrl();
+    return base ? base+"?n="+encodeURIComponent(curName) : "https://wanghj-it.github.io/ai-agent-demo/";
+  }
   function renderShareCard(){
     const w=1080,h=1920;
+    const qr=new Image();qr.crossOrigin="anonymous";
+    qr.src="https://api.qrserver.com/v1/create-qr-code/?size=560x560&data="+encodeURIComponent(shareLink());
     return new Promise(resolve=>{
       const img=new Image();
-      const build=()=>{
+      let bgReady=false,qrReady=false,qrOk=true,useSharp=false;
+      function build(){
+        const src=useSharp?sharpImg:img;
         const off=document.createElement("canvas");off.width=w;off.height=h;
         const oc=off.getContext("2d");
-        const ir=img.width/img.height,cr=w/h;
+        const ir=src.width/src.height,cr=w/h;
         let dw,dh,dx,dy;
         if(ir>cr){dh=h;dw=h*ir;dx=(w-dw)/2;dy=0;}else{dw=w;dh=w/ir;dx=0;dy=(h-dh)/2;}
-        oc.drawImage(img,dx,dy,dw,dh);
+        oc.drawImage(src,dx,dy,dw,dh);
         drawParticles(oc,w,h);
-        drawShareOverlay(oc,w,h);
+        drawShareOverlay(oc,w,h,qrOk?qr:null);
+        if(qrOk){
+          try{ oc.getImageData(0,0,1,1); }
+          catch(err){ qrOk=false; build(); return; }
+        }
         resolve(off);
-      };
-      img.onload=build;
-      img.onerror=()=>{
-        const off2=document.createElement("canvas");off2.width=w;off2.height=h;
-        const oc2=off2.getContext("2d");oc2.drawImage(sharpImg,0,0,w,h);
-        drawParticles(oc2,w,h);drawShareOverlay(oc2,w,h);resolve(off2);
-      };
+      }
+      function maybe(){if(bgReady&&qrReady)build();}
+      img.onload=()=>{bgReady=true;maybe();};
+      img.onerror=()=>{useSharp=true;bgReady=true;maybe();};
+      qr.onload=()=>{qrReady=true;maybe();};
+      qr.onerror=()=>{qrOk=false;qrReady=true;maybe();};
       img.src=isCustom?customImg.url:THEMES[themeIdx].img;
     });
   }
-  function drawShareOverlay(oc,w,h){
+  function drawShareOverlay(oc,w,h,qr){
     oc.textAlign="center";
     const gy=h*0.4;
     const g=oc.createLinearGradient(0,gy,0,h);
     g.addColorStop(0,"rgba(0,0,0,0)");
     g.addColorStop(1,"rgba(0,0,0,0.78)");
     oc.fillStyle=g;oc.fillRect(0,gy,w,h-gy);
+    putAvatar(oc,w/2,340,250);
     oc.shadowColor="rgba(0,0,0,0.65)";oc.shadowBlur=14;
 
     oc.fillStyle="#ffffff";
@@ -1228,28 +1365,33 @@
     for(const ln of lines){oc.fillText(ln,w/2,ly);ly-=lh;}
 
     oc.shadowBlur=0;
+    if(qr){
+      oc.drawImage(qr,w/2-160,1420,320,320);
+      oc.strokeStyle="rgba(255,255,255,0.35)";oc.lineWidth=4;
+      oc.strokeRect(w/2-168,1412,336,336);
+    }
     oc.fillStyle="rgba(255,255,255,0.92)";
     oc.font="500 40px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
-    oc.fillText("一起来玩 → wanghj-it.github.io/ai-agent-demo",w/2,h-150);
+    oc.fillText("扫一扫，回到你的专属签",w/2,1790);
     oc.fillStyle="rgba(255,255,255,0.5)";
     oc.font="300 30px \"PingFang SC\",\"Microsoft YaHei\",sans-serif";
     const d=new Date();
-    oc.fillText("幻灯庭 · 二次元壁纸机 · "+(d.getMonth()+1)+"/"+d.getDate(),w/2,h-95);
+    oc.fillText("幻灯庭 · 二次元壁纸机 · "+(d.getMonth()+1)+"/"+d.getDate(),w/2,1840);
   }
   document.getElementById("share").addEventListener("click",()=>{
-    const link=getShareUrl()+"?n="+encodeURIComponent(curName);
+    const link=shareLink();
     const text="我在「幻灯庭」摇到一枚二次元壁纸签 ✨"+gnameEl.textContent+"✨\n"+
-      coordEl.textContent+"\n"+verseEl.textContent+"\n快来摇你的那枚 → "+(link||"（发布后可复制本页链接）");
+      coordEl.textContent+"\n"+verseEl.textContent+"\n快来摇你的那枚 → "+link;
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(()=>showToast("文案已复制，正在生成分享海报…")).catch(()=>fallbackCopy(text));
+      navigator.clipboard.writeText(text).then(()=>showToast("文案已复制，正在生成含二维码的海报…")).catch(()=>fallbackCopy(text));
     }else fallbackCopy(text);
     renderShareCard().then(off=>{
       off.toBlob(b=>{
         if(!b)return;
         downloadBlob(b,"幻灯庭-分享海报-"+curName+".png");
-        showToast("分享文案已复制 · 海报已保存");
+        showToast("文案已复制 · 海报（含二维码）已保存");
       },"image/png");
-    }).catch(()=>{});
+    }).catch(()=>showToast("海报生成失败，文案已复制，可重试"));
   });
   function fallbackCopy(text){
     const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);
@@ -1313,6 +1455,7 @@
         halo.addColorStop(0.55,"rgba("+th.glow[1].join(",")+",0.5)");
         halo.addColorStop(1,"rgba(0,0,0,0)");
         oc.fillStyle=halo;oc.beginPath();oc.arc(gx,gy2,r,0,Math.PI*2);oc.fill();
+        putAvatar(oc,gx,gy2,240);
 
         let y=820;
         for(const a of [divineResult.a1,divineResult.a2]){
