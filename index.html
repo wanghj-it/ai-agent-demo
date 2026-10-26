@@ -95,6 +95,11 @@
     opacity:.72;transition:opacity .2s ease,transform .2s ease,border-color .2s ease;}
   .thumb:hover{opacity:1;transform:translateY(-2px);}
   .thumb.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25),0 4px 18px rgba(0,0,0,.4);}
+  .thumb.add{display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);
+    background:rgba(255,255,255,.08);border-color:var(--line);}
+  .thumb.add:hover{color:var(--ink);}
+  .thumb.add.on{color:#fff;border-color:#fff;background:rgba(255,255,255,.16);
+    box-shadow:0 0 0 2px rgba(255,255,255,.25),0 4px 18px rgba(0,0,0,.4);}
   .controls{display:flex;align-items:center;gap:14px;padding:9px 18px;
     background:var(--glass);border:1px solid var(--line);border-radius:999px;
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -311,6 +316,17 @@
   const clockBtn=document.getElementById("clockBtn");
   const themesEl=document.getElementById("themes");
 
+  /* ---------- 自定义图片 ---------- */
+  let customImg=null,isCustom=false; // customImg:{url,name}
+  const IDB=(()=>{
+    const DB="huadengting",STORE="kv";
+    function open(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+    return {
+      get(key){return open().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE,"readonly").objectStore(STORE).get(key);tx.onsuccess=()=>res(tx.result);tx.onerror=()=>rej(tx.error);}));},
+      set(key,val){return open().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite").objectStore(STORE).put(val,key);tx.onsuccess=()=>res();tx.onerror=()=>rej(tx.error);}));}
+    };
+  })();
+
   /* ---------- 方向 / 主题状态 ---------- */
   let themeIdx=0,forceOrient="auto",lastOrient=null,clockOn=false;
   const VIEW_LABEL={auto:"自动",land:"横版",port:"竖版"};
@@ -318,13 +334,18 @@
     if(forceOrient==="auto")return (window.innerWidth>=window.innerHeight)?"land":"port";
     return forceOrient;
   }
+  function currentBgUrl(){return isCustom?customImg.url:THEMES[themeIdx][currentOrient()==="land"?"land":"img"];}
   function applyBackground(withFade){
-    const url=currentOrient()==="land"?THEMES[themeIdx].land:THEMES[themeIdx].img;
+    const url=currentBgUrl();
     if(!withFade){blurImg.src=url;sharpImg.src=url;return;}
     bgEl.classList.add("fading");
     const pre=new Image();
     const commit=()=>{blurImg.src=url;sharpImg.src=url;bgEl.classList.remove("fading");};
     pre.onload=commit;pre.onerror=commit;pre.src=url;
+  }
+  function syncThemeUI(){
+    thumbs.forEach((b,i)=>b.classList.toggle("on",!isCustom&&i===themeIdx));
+    if(addBtn)addBtn.classList.toggle("on",isCustom);
   }
   function checkOrient(){
     const o=currentOrient();
@@ -423,8 +444,9 @@
   });
 
   function setTheme(i,withFade){
+    isCustom=false;
     themeIdx=i;
-    thumbs.forEach((b,idx)=>b.classList.toggle("on",idx===i));
+    syncThemeUI();
     buildGlowSprites();
     petalSprite=buildPetalSprite(48);
     for(let j=0;j<motes.length;j++)motes[j].ci=(Math.random()*THEMES[i].glow.length)|0;
@@ -441,6 +463,31 @@
     b.addEventListener("click",()=>setTheme(i,true));
     themesEl.appendChild(b);
     thumbs.push(b);
+  });
+  // 上传按钮
+  const addBtn=document.createElement("button");
+  addBtn.className="thumb add";
+  addBtn.title="上传自定义图片";
+  addBtn.textContent="＋";
+  themesEl.appendChild(addBtn);
+  const imgFile=document.createElement("input");
+  imgFile.type="file";
+  imgFile.accept="image/*";
+  imgFile.hidden=true;
+  document.body.appendChild(imgFile);
+  addBtn.addEventListener("click",()=>imgFile.click());
+  imgFile.addEventListener("change",()=>{
+    const f=imgFile.files&&imgFile.files[0];
+    imgFile.value="";
+    if(!f)return;
+    if(!f.type.startsWith("image/")){showToast("请选择图片文件");return;}
+    const url=URL.createObjectURL(f);
+    if(customImg&&customImg.url&&customImg.url.startsWith("blob:"))URL.revokeObjectURL(customImg.url);
+    customImg={url,name:f.name};isCustom=true;
+    syncThemeUI();
+    applyBackground(true);
+    IDB.set("customImg",{blob:f,name:f.name}).catch(()=>showToast("无法本地保存，刷新后将丢失"));
+    showToast("已应用你的图片");
   });
 
   function burst(x,y){
@@ -594,7 +641,7 @@
   function renderWallpaper(){
     const orient=currentOrient();
     const w=orient==="land"?2560:1440,h=orient==="land"?1440:2560;
-    const url=orient==="land"?THEMES[themeIdx].land:THEMES[themeIdx].img;
+    const url=currentBgUrl();
     return new Promise(resolve=>{
       const img=new Image();
       const build=()=>{
@@ -1032,7 +1079,7 @@
         const oc2=off2.getContext("2d");oc2.drawImage(sharpImg,0,0,w,h);
         drawParticles(oc2,w,h);drawShareOverlay(oc2,w,h);resolve(off2);
       };
-      img.src=THEMES[themeIdx].img;
+      img.src=isCustom?customImg.url:THEMES[themeIdx].img;
     });
   }
   function drawShareOverlay(oc,w,h){
@@ -1217,6 +1264,19 @@
       generate(hashStr(curName+"@"+todayKey()));
     }
   }
+
+  /* ---------- 恢复自定义图片 ---------- */
+  (async()=>{
+    try{
+      const saved=await IDB.get("customImg");
+      if(saved&&saved.blob){
+        customImg={url:URL.createObjectURL(saved.blob),name:saved.name};
+        isCustom=true;
+        applyBackground(true);
+        syncThemeUI();
+      }
+    }catch(e){}
+  })();
 })();
 </script>
 </body>
