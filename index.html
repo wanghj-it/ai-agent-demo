@@ -201,6 +201,7 @@
         <button class="ghost" id="save">保存壁纸</button>
         <button class="ghost" id="saveVideo">动态视频</button>
         <button class="ghost" id="saveHtml">动态网页</button>
+        <button class="ghost" id="wallBtn">桌面动态壁纸</button>
         <button class="ghost" id="share">复制分享</button>
         <button class="ghost" id="divine">本命占卜</button>
         <button class="ghost" id="regen">换一签</button>
@@ -243,6 +244,20 @@
     <div class="dbtns">
       <button class="ghost" id="dsave">保存角色卡</button>
     </div>
+  </div>
+</div>
+
+<div class="dmask hidden" id="wmask">
+  <div class="dcard">
+    <button class="dclose" id="wclose">✕</button>
+    <h2 class="dtitle" id="wtitle">设为桌面动态壁纸</h2>
+    <p class="dsay" id="wsay">已生成动态壁纸网页 <b>.html</b>，按下方步骤用 Lively Wallpaper 设为桌面壁纸。</p>
+    <div class="dtags" style="flex-direction:column;align-items:stretch;gap:12px;margin-top:20px;">
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;">① 安装免费的 <b>Lively Wallpaper</b>（Windows 应用商店即可）</div>
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;">② 打开 Lively → 点 <b>＋</b> / 导入 → 选择刚下载的 <b>.html</b> 文件</div>
+      <div class="dtag" style="text-align:left;line-height:1.7;letter-spacing:.03em;padding:14px 16px;">③ 在桌面上点该壁纸，选择要填充的显示器即为动态壁纸</div>
+    </div>
+    <p class="dsay" style="margin-top:18px;font-size:13px;color:var(--muted);">网页壁纸同样可被 Wallpaper Engine 以“网页 / 本地 HTML”方式加载。</p>
   </div>
 </div>
 
@@ -958,26 +973,46 @@
   function escHtml(s){
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
+  async function packDynamicHtml(){
+    const orient=currentOrient();
+    const th=THEMES[themeIdx];
+    const src=await imgDataUrl(orient==="land"?th.land:th.img);
+    const d=new Date();
+    const dateStr=(d.getMonth()+1)+"月"+d.getDate()+"日";
+    const html=buildLivePage({
+      src:src,glow:th.glow,petal:th.petal,seed:curSeed,
+      name:gnameEl.textContent,coord:coordEl.textContent,verse:verseEl.textContent,date:dateStr
+    });
+    downloadBlob(new Blob([html],{type:"text/html;charset=utf-8"}),
+      "幻灯庭-"+curName+"-"+VIEW_LABEL[orient]+"-动态.html");
+  }
   document.getElementById("saveHtml").addEventListener("click",async()=>{
     if(busyExport){showToast("正在导出，请稍候…");return;}
     busyExport=true;
     showToast("正在打包动态壁纸网页…");
     try{
-      const orient=currentOrient();
-      const th=THEMES[themeIdx];
-      const src=await imgDataUrl(orient==="land"?th.land:th.img);
-      const d=new Date();
-      const dateStr=(d.getMonth()+1)+"月"+d.getDate()+"日";
-      const html=buildLivePage({
-        src:src,glow:th.glow,petal:th.petal,seed:curSeed,
-        name:gnameEl.textContent,coord:coordEl.textContent,verse:verseEl.textContent,date:dateStr
-      });
-      downloadBlob(new Blob([html],{type:"text/html;charset=utf-8"}),
-        "幻灯庭-"+curName+"-"+VIEW_LABEL[orient]+"-动态.html");
+      await packDynamicHtml();
       busyExport=false;
-      showToast("动态网页已保存，浏览器打开即循环播放");
+      showToast("动态网页已保存，可用 Lively 设为桌面壁纸");
     }catch(err){busyExport=false;showToast("动态网页导出失败，请重试");}
   });
+  document.getElementById("wallBtn").addEventListener("click",async()=>{
+    if(busyExport){showToast("正在导出，请稍候…");return;}
+    busyExport=true;
+    showToast("正在生成桌面动态壁纸…");
+    try{
+      await packDynamicHtml();
+      busyExport=false;
+      wmask.classList.remove("hidden");
+      requestAnimationFrame(()=>requestAnimationFrame(()=>wmask.classList.add("show")));
+      showToast("动态壁纸网页已保存，请按步骤导入 Lively");
+    }catch(err){busyExport=false;showToast("动态壁纸生成失败，请重试");}
+  });
+  document.getElementById("wclose").addEventListener("click",()=>{
+    wmask.classList.remove("show");
+    setTimeout(()=>wmask.classList.add("hidden"),320);
+  });
+  wmask.addEventListener("click",e=>{if(e.target===wmask){wmask.classList.remove("show");setTimeout(()=>wmask.classList.add("hidden"),320);}});
 
   function buildLivePage(o){
     const name=escHtml(o.name),coord=escHtml(o.coord),verse=escHtml(o.verse);
@@ -986,6 +1021,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Lively Wallpaper: 本 HTML 可被 Lively / Wallpaper Engine 导入为桌面动态壁纸 -->
 <title>幻灯庭 · 动态壁纸</title>
 <style>
   html,body{margin:0;height:100%;background:#06060d;overflow:hidden;
@@ -996,7 +1032,7 @@
   .shade{position:fixed;inset:0;pointer-events:none;background:
     linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 28%,rgba(0,0,0,0) 54%,rgba(0,0,0,.76) 100%);}
   .txt{position:fixed;left:0;right:0;bottom:max(8vh,40px);text-align:center;
-    padding:0 6vw;pointer-events:none;}
+    padding:0 6vw;pointer-events:none;user-select:none;-webkit-user-select:none;}
   .txt h1{margin:0;font-family:"Songti SC","STSong","SimSun",serif;font-weight:600;
     font-size:clamp(26px,7vw,60px);line-height:1.25;letter-spacing:.08em;color:#fff;
     text-shadow:0 2px 22px rgba(0,0,0,.7);}
@@ -1067,6 +1103,7 @@
   }
   function frame(now){
     requestAnimationFrame(frame);
+    if(document.hidden)return; /* 壁纸后台/不可见时暂停绘制，省 CPU */
     var t=(now-t0)/1000;
     ctx.clearRect(0,0,W,H);
     ctx.globalCompositeOperation='source-over';
@@ -1103,7 +1140,7 @@
     }
     ctx.globalCompositeOperation='source-over';
   }
-  window.addEventListener('pointerdown',function(e){bursts.push({x:e.clientX,y:e.clientY,age:0});});
+  /* 壁纸模式：不拦截鼠标交互，避免桌面误触发特效 */
   window.addEventListener('resize',resize);
   resize();requestAnimationFrame(frame);
 })();
